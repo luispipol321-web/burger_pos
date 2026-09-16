@@ -96,6 +96,14 @@ class PosHomeScreen extends StatefulWidget {
 
 class _PosHomeScreenState extends State<PosHomeScreen> {
   List<Product> _products = [];
+  List<Map<String, dynamic>> _rawMaterials = [];
+
+  final List<Map<String, dynamic>> _defaultRawMaterials = [
+    {'name': 'Pan de Hamburguesa', 'cost': 5.0, 'stock': 100, 'unit': 'pzas'},
+    {'name': 'Carne de Res (Medallón)', 'cost': 18.0, 'stock': 80, 'unit': 'pzas'},
+    {'name': 'Queso Amarillo', 'cost': 3.0, 'stock': 120, 'unit': 'pzas'},
+    {'name': 'Papas para freír (kg)', 'cost': 30.0, 'stock': 25, 'unit': 'kg'},
+  ];
   final List<CartItem> _cart = [];
   final List<KitchenOrder> _kitchenOrders = [];
   List<Map<String, dynamic>> _salesHistory = [];
@@ -128,6 +136,13 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       final String? loyaltyJson = prefs.getString('loyalty_data_strict_v3');
       final String? historyJson = prefs.getString('sales_history_v2');
 
+      final String? rawJson = prefs.getString('raw_materials_v1');
+    if (rawJson != null) {
+      _rawMaterials = List<Map<String, dynamic>>.from(jsonDecode(rawJson));
+    } else {
+      _rawMaterials = List.from(_defaultRawMaterials);
+      _saveRawMaterials();
+    }
       setState(() {
         _totalSalesToday = prefs.getDouble('total_sales') ?? 0.0;
         _totalOrdersToday = prefs.getInt('total_orders') ?? 0;
@@ -159,6 +174,69 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     }
   }
 
+  Future<void> _saveRawMaterials() async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('raw_materials_v1', jsonEncode(_rawMaterials));
+    }
+
+    void _addRawMaterial(String name, double cost, int stock, String unit) {
+      setState(() {
+        _rawMaterials.add({'name': name, 'cost': cost, 'stock': stock, 'unit': unit});
+      });
+      _saveRawMaterials();
+    }
+
+    void _updateRawMaterial(Map<String, dynamic> material, String name, double cost, int stock) {
+      setState(() {
+        material['name'] = name;
+        material['cost'] = cost;
+        material['stock'] = stock;
+      });
+      _saveRawMaterials();
+    }
+
+    void _deleteRawMaterial(int index) {
+      setState(() {
+        _rawMaterials.removeAt(index);
+      });
+      _saveRawMaterials();
+    }
+
+    void _restockRawMaterial(Map<String, dynamic> material, int qty, double newCost) {
+      final oldCost = (material['cost'] as num).toDouble();
+      setState(() {
+        material['stock'] = (material['stock'] as int) + qty;
+        material['cost'] = newCost;
+      });
+      _saveRawMaterials();
+
+      if (newCost > oldCost && oldCost > 0) {
+        _showRawPriceIncreaseAlert(material['name'], oldCost, newCost);
+      }
+    }
+
+    void _showRawPriceIncreaseAlert(String materialName, double oldCost, double newCost) {
+      final diff = newCost - oldCost;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('⚠️ ¡ALERTA DE ALZA DE INSUMO!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          content: Text(
+            'El insumo clave "$materialName" subió de precio en tu proveedor.\n\n'
+            '• Costo anterior: \$${oldCost.toStringAsFixed(2)}\n'
+            '• Costo nuevo: \$${newCost.toStringAsFixed(2)} (+ \$${diff.toStringAsFixed(2)})\n\n'
+            'Te recomendamos revisar los precios de venta en tu Menú Comercial.',
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ENTENDIDO'),
+            ),
+          ],
+        ),
+      );
+    }
   Future<void> _saveProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final String encoded = jsonEncode(_products.map((p) => p.toMap()).toList());
@@ -275,30 +353,69 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
 
   double get _total => _cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
 
-  void _openInventoryView() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => InventoryManagementScreen(
-          products: _products,
-          onRestock: (Product product, int qty, double newCost) {
-            setState(() {
-              final oldCost = product.costPrice;
-              product.stock += qty;
-              product.costPrice = newCost;
-              _saveProducts();
-              if (newCost > oldCost && oldCost > 0) {
-                _showPriceIncreaseAlert(product, oldCost, newCost);
-              }
-            });
-          },
-          onAddProduct: _addProduct,
-          onUpdateProduct: _updateProduct,
-          onDeleteProduct: _deleteProduct,
+Future<void> _saveRawMaterials() async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('raw_materials_v1', jsonEncode(_rawMaterials));
+    }
+
+    void _addRawMaterial(String name, double cost, int stock, String unit) {
+      setState(() {
+        _rawMaterials.add({'name': name, 'cost': cost, 'stock': stock, 'unit': unit});
+      });
+      _saveRawMaterials();
+    }
+
+    void _updateRawMaterial(Map<String, dynamic> material, String name, double cost, int stock) {
+      setState(() {
+        material['name'] = name;
+        material['cost'] = cost;
+        material['stock'] = stock;
+      });
+      _saveRawMaterials();
+    }
+
+    void _deleteRawMaterial(int index) {
+      setState(() {
+        _rawMaterials.removeAt(index);
+      });
+      _saveRawMaterials();
+    }
+
+    void _restockRawMaterial(Map<String, dynamic> material, int qty, double newCost) {
+      final oldCost = (material['cost'] as num).toDouble();
+      setState(() {
+        material['stock'] = (material['stock'] as int) + qty;
+        material['cost'] = newCost;
+      });
+      _saveRawMaterials();
+
+      if (newCost > oldCost && oldCost > 0) {
+        _showRawPriceIncreaseAlert(material['name'], oldCost, newCost);
+      }
+    }
+
+    void _showRawPriceIncreaseAlert(String materialName, double oldCost, double newCost) {
+      final diff = newCost - oldCost;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('⚠️ ¡ALERTA DE ALZA DE INSUMO!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          content: Text(
+            'El insumo clave "$materialName" subió de precio en tu proveedor.\n\n'
+            '• Costo anterior: \$${oldCost.toStringAsFixed(2)}\n'
+            '• Costo nuevo: \$${newCost.toStringAsFixed(2)} (+ \$${diff.toStringAsFixed(2)})\n\n'
+            'Te recomendamos revisar los precios de venta en tu Menú Comercial.',
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ENTENDIDO'),
+            ),
+          ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
   void _showPriceIncreaseAlert(Product product, double oldCost, double newCost) {
     final diff = newCost - oldCost;
@@ -929,12 +1046,18 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
   }
 }
 
-class InventoryManagementScreen extends StatelessWidget {
+class InventoryManagementScreen extends StatefulWidget {
   final List<Product> products;
   final Function(Product, int, double) onRestock;
   final Function(String, double, double, String?, int) onAddProduct;
   final Function(Product, String, double, double, String?, int) onUpdateProduct;
   final Function(int) onDeleteProduct;
+
+  final List<Map<String, dynamic>> rawMaterials;
+  final Function(String, double, int, String) onAddRawMaterial;
+  final Function(Map<String, dynamic>, String, double, int) onUpdateRawMaterial;
+  final Function(int) onDeleteRawMaterial;
+  final Function(Map<String, dynamic>, int, double) onRestockRawMaterial;
 
   const InventoryManagementScreen({
     super.key,
@@ -943,7 +1066,25 @@ class InventoryManagementScreen extends StatelessWidget {
     required this.onAddProduct,
     required this.onUpdateProduct,
     required this.onDeleteProduct,
+    required this.rawMaterials,
+    required this.onAddRawMaterial,
+    required this.onUpdateRawMaterial,
+    required this.onDeleteRawMaterial,
+    required this.onRestockRawMaterial,
   });
+
+  @override
+  State<InventoryManagementScreen> createState() => _InventoryManagementScreenState();
+}
+
+class _InventoryManagementScreenState extends State<InventoryManagementScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   void _showProductForm(BuildContext context, {Product? productToEdit}) {
     final nameController = TextEditingController(text: productToEdit?.name ?? '');
@@ -958,49 +1099,14 @@ class InventoryManagementScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(productToEdit == null ? 'Agregar Nuevo Producto' : 'Editar Producto'),
+              title: Text(productToEdit == null ? 'Agregar Plato al Menú' : 'Editar Plato del Menú'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final picker = ImagePicker();
-                        final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                        if (image != null) {
-                          setDialogState(() {
-                            selectedImagePath = image.path;
-                          });
-                        }
-                      },
-                      child: Container(
-                        height: 100,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.orange.shade300),
-                        ),
-                        child: selectedImagePath != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(File(selectedImagePath!), fit: BoxFit.cover),
-                              )
-                            : const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo, size: 32, color: Colors.orange),
-                                  SizedBox(height: 4),
-                                  Text('Seleccionar Imagen de Galería', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                ],
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nombre')),
-                    TextField(controller: priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Precio Público Venta')),
-                    TextField(controller: costController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Costo de Compra')),
-                    TextField(controller: stockController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Stock / Inventario')),
+                    TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nombre del Plato (Ej. Clásica)')),
+                    TextField(controller: priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Precio Público Venta (\$e.g. 95.00)')),
+                    TextField(controller: costController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Costo Estimado Producción')),
                   ],
                 ),
               ),
@@ -1016,11 +1122,12 @@ class InventoryManagementScreen extends StatelessWidget {
 
                     if (name.isNotEmpty && price > 0) {
                       if (productToEdit == null) {
-                        onAddProduct(name, price, cost, selectedImagePath, stock);
+                        widget.onAddProduct(name, price, cost, selectedImagePath, stock);
                       } else {
-                        onUpdateProduct(productToEdit, name, price, cost, selectedImagePath, stock);
+                        widget.onUpdateProduct(productToEdit, name, price, cost, selectedImagePath, stock);
                       }
                       Navigator.pop(context);
+                      setState(() {});
                     }
                   },
                   child: const Text('Guardar'),
@@ -1033,19 +1140,65 @@ class InventoryManagementScreen extends StatelessWidget {
     );
   }
 
-  void _showRestockDialog(BuildContext context, Product product) {
-    final qtyController = TextEditingController();
-    final costController = TextEditingController(text: product.costPrice.toString());
+  void _showRawMaterialForm(BuildContext context, {Map<String, dynamic>? materialToEdit}) {
+    final nameController = TextEditingController(text: materialToEdit?['name'] ?? '');
+    final costController = TextEditingController(text: materialToEdit?['cost']?.toString() ?? '');
+    final stockController = TextEditingController(text: materialToEdit?['stock']?.toString() ?? '100');
+    final unitController = TextEditingController(text: materialToEdit?['unit'] ?? 'pzas');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Surtir: ${product.name}'),
+        title: Text(materialToEdit == null ? 'Nuevo Insumo (Materia Prima)' : 'Editar Insumo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nombre Insumo (Ej. Pan, Carne, Queso)')),
+            TextField(controller: costController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Costo de Compra Actual (\$ Unidad)')),
+            TextField(controller: stockController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cantidad en Stock')),
+            TextField(controller: unitController, decoration: const InputDecoration(labelText: 'Unidad de Medida (pzas, kg, litros)')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            onPressed: () {
+              final name = nameController.text.trim();
+              final cost = double.tryParse(costController.text) ?? 0.0;
+              final stock = int.tryParse(stockController.text) ?? 0;
+              final unit = unitController.text.trim().isEmpty ? 'pzas' : unitController.text.trim();
+
+              if (name.isNotEmpty) {
+                if (materialToEdit == null) {
+                  widget.onAddRawMaterial(name, cost, stock, unit);
+                } else {
+                  widget.onUpdateRawMaterial(materialToEdit, name, cost, stock);
+                }
+                Navigator.pop(context);
+                setState(() {});
+              }
+            },
+            child: const Text('Guardar Insumo'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRestockRawMaterialDialog(BuildContext context, Map<String, dynamic> material) {
+    final qtyController = TextEditingController();
+    final costController = TextEditingController(text: material['cost'].toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Surtir Insumo: ${material['name']}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(controller: qtyController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cantidad a comprar')),
-            TextField(controller: costController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Costo unitario nuevo')),
+            TextField(controller: costController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Costo unitario nuevo (\$suscita alerta si subió)')),
           ],
         ),
         actions: [
@@ -1054,13 +1207,14 @@ class InventoryManagementScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
             onPressed: () {
               final qty = int.tryParse(qtyController.text) ?? 0;
-              final cost = double.tryParse(costController.text) ?? product.costPrice;
+              final newCost = double.tryParse(costController.text) ?? material['cost'];
               if (qty > 0) {
-                onRestock(product, qty, cost);
+                widget.onRestockRawMaterial(material, qty, newCost);
                 Navigator.pop(context);
+                setState(() {});
               }
             },
-            child: const Text('Actualizar Stock'),
+            child: const Text('Registrar Compra y Surtir'),
           ),
         ],
       ),
@@ -1071,49 +1225,111 @@ class InventoryManagementScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📦 Gestión de Inventario y Menú'),
+        title: const Text('🍔 Administración del Negocio'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          tabs: const [
+            Tab(icon: Icon(Icons.menu_book), text: 'Menú Comercial'),
+            Tab(icon: Icon(Icons.inventory_2), text: 'Almacén de Insumos'),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showProductForm(context),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo Producto'),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final p = products[index];
-          return Card(
-            child: ListTile(
-              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Precio: \$${p.price.toStringAsFixed(2)} | Costo: \$${p.costPrice.toStringAsFixed(2)} | Stock: ${p.stock}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    tooltip: 'Editar Precios / Datos',
-                    onPressed: () => _showProductForm(context, productToEdit: p),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.local_shipping, color: Colors.orange),
-                    tooltip: 'Surtir',
-                    onPressed: () => _showRestockDialog(context, p),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    tooltip: 'Eliminar',
-                    onPressed: () => onDeleteProduct(index),
-                  ),
-                ],
-              ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          Scaffold(
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () => _showProductForm(context),
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('Nuevo Plato'),
             ),
-          );
-        },
+            body: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: widget.products.length,
+              itemBuilder: (context, index) {
+                final p = widget.products[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Precio Venta Público: \$${p.price.toStringAsFixed(2)}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          tooltip: 'Editar Precio o Nombre',
+                          onPressed: () => _showProductForm(context, productToEdit: p),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Eliminar Plato',
+                          onPressed: () {
+                            widget.onDeleteProduct(index);
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Scaffold(
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () => _showRawMaterialForm(context),
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_box),
+              label: const Text('Nuevo Insumo'),
+            ),
+            body: widget.rawMaterials.isEmpty
+                ? const Center(child: Text('No hay insumos registrados.'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: widget.rawMaterials.length,
+                    itemBuilder: (context, index) {
+                      final m = widget.rawMaterials[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(m['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('Costo actual: \$${(m['cost'] as num).toStringAsFixed(2)} | Stock: ${m['stock']} ${m['unit']}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.local_shipping, color: Colors.orange),
+                                tooltip: 'Surtir Insumo (Revisión de Alza)',
+                                onPressed: () => _showRestockRawMaterialDialog(context, m),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                tooltip: 'Editar Insumo',
+                                onPressed: () => _showRawMaterialForm(context, materialToEdit: m),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                tooltip: 'Eliminar',
+                                onPressed: () {
+                                  widget.onDeleteRawMaterial(index);
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
