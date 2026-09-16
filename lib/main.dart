@@ -392,6 +392,43 @@ Future<void> _selectReportDate(BuildContext context) async {
         );
       }
     }
+    void _showClientsLoyaltyView() {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('👥 Clientes y Lealtad', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: _loyaltyData.isEmpty
+                ? const Center(child: Text('Aún no hay clientes registrados en el sistema.'))
+                : ListView.builder(
+                    itemCount: _loyaltyData.length,
+                    itemBuilder: (context, index) {
+                      final clientKey = _loyaltyData.keys.elementAt(index);
+                      final clientInfo = _loyaltyData[clientKey];
+                      return ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.orange,
+                          child: Icon(Icons.person, color: Colors.white),
+                        ),
+                        title: Text(clientInfo['name'] ?? clientKey, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('Última compra: ${clientInfo['lastPurchase'] ?? 'N/A'}\nVisitas / Puntos: ${clientInfo['visits'] ?? 1}'),
+                        isThreeLine: true,
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CERRAR'),
+            ),
+          ],
+        ),
+      );
+    }
     
     for (var item in items) {
       final index = _products.indexWhere((p) => p.id == item.product.id);
