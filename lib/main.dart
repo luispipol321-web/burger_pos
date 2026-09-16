@@ -202,41 +202,7 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       _saveRawMaterials();
     }
 
-    void _restockRawMaterial(Map<String, dynamic> material, int qty, double newCost) {
-      final oldCost = (material['cost'] as num).toDouble();
-      setState(() {
-        material['stock'] = (material['stock'] as int) + qty;
-        material['cost'] = newCost;
-      });
-      _saveRawMaterials();
-
-      if (newCost > oldCost && oldCost > 0) {
-        _showRawPriceIncreaseAlert(material['name'], oldCost, newCost);
-      }
-    }
-
-    void _showRawPriceIncreaseAlert(String materialName, double oldCost, double newCost) {
-      final diff = newCost - oldCost;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('⚠️ ¡ALERTA DE ALZA DE INSUMO!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          content: Text(
-            'El insumo clave "$materialName" subió de precio en tu proveedor.\n\n'
-            '• Costo anterior: \$${oldCost.toStringAsFixed(2)}\n'
-            '• Costo nuevo: \$${newCost.toStringAsFixed(2)} (+ \$${diff.toStringAsFixed(2)})\n\n'
-            'Te recomendamos revisar los precios de venta en tu Menú Comercial.',
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('ENTENDIDO'),
-            ),
-          ],
-        ),
-      );
-    }
+    
   Future<void> _saveProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final String encoded = jsonEncode(_products.map((p) => p.toMap()).toList());
