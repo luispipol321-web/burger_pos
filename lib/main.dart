@@ -253,6 +253,25 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
     await prefs.setString('sales_history_v2', jsonEncode(_salesHistory));
   }
 
+  void _openInventoryView() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InventoryManagementScreen(
+          products: _products,
+          onRestock: (Product product, int qty, double newCost) {},
+          onAddProduct: _addProduct,
+          onUpdateProduct: _updateProduct,
+          onDeleteProduct: _deleteProduct,
+          rawMaterials: _rawMaterials,
+          onAddRawMaterial: _addRawMaterial,
+          onUpdateRawMaterial: _updateRawMaterial,
+          onDeleteRawMaterial: _deleteRawMaterial,
+          onRestockRawMaterial: _restockRawMaterial,
+        ),
+      ),
+    );
+  }
   Future<void> _recordSale(double amount, List<CartItem> items, String method) async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
