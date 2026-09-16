@@ -272,12 +272,61 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       ),
     );
   }
+  void _restockRawMaterial(Map<String, dynamic> material, int qty, double newCost) {
+      final oldCost = (material['cost'] as num).toDouble();
+      setState(() {
+        material['stock'] = (material['stock'] as int) + qty;
+        material['cost'] = newCost;
+      });
+      _saveRawMaterials();
+
+      if (newCost > oldCost && oldCost > 0) {
+        _showRawPriceIncreaseAlert(material['name'], oldCost, newCost);
+      }
+    }
+
+    void _showRawPriceIncreaseAlert(String materialName, double oldCost, double newCost) {
+      final diff = newCost - oldCost;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('⚠️ ¡ALERTA DE ALZA DE INSUMO!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          content: Text(
+            'El insumo "$materialName" subió de precio con tu proveedor.\n\n'
+            '• Costo anterior: \$${oldCost.toStringAsFixed(2)}\n'
+            '• Costo nuevo: \$${newCost.toStringAsFixed(2)} (+ \$${diff.toStringAsFixed(2)})\n\n'
+            'Te recomendamos revisar los precios de tus platos en el Menú Comercial.',
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ENTENDIDO'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    void _deductRawMaterialsForSale(List<CartItem> soldItems) {
+      for (var cartItem in soldItems) {
+        for (var rawMat in _rawMaterials) {
+          if (cartItem.product.name.toLowerCase().contains('hamburguesa') && 
+             (rawMat['name'].toString().toLowerCase().contains('carne') || rawMat['name'].toString().toLowerCase().contains('pan'))) {
+            int currentStock = (rawMat['stock'] as int);
+            int qtyToDeduct = cartItem.quantity;
+            rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+          }
+        }
+      }
+      _saveRawMaterials();
+    }
   Future<void> _recordSale(double amount, List<CartItem> items, String method) async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
     final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-    setState(() {
+    setState(() { _deductRawMaterialsForSale(items);
       _totalSalesToday += amount;
       _totalOrdersToday += 1;
       _salesHistory.add({
@@ -287,7 +336,63 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
         'itemsCount': items.fold(0, (sum, i) => sum + i.quantity),
       });
     });
+Future<void> _selectReportDate(BuildContext context) async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(2025),
+        lastDate: DateTime(2030),
+      );
+      if (picked != null) {
+        final dateStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        
+        final salesOnDate = _salesHistory.where((sale) => sale['date'] == dateStr).toList();
+        double totalOnDate = salesOnDate.fold(0.0, (sum, sale) => sum + (sale['total'] as num).toDouble());
+        int ordersOnDate = salesOnDate.length;
 
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('📊 Reporte del día $dateStr', style: const TextStyle(fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('• Total Vendido: \$${totalOnDate.toStringAsFixed(2)}'),
+                Text('• Órdenes Realizadas: $ordersOnDate'),
+                const SizedBox(height: 10),
+                const Text('Desglose de transacciones:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                SizedBox(
+                  height: 150,
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: salesOnDate.length,
+                    itemBuilder: (context, index) {
+                      final sale = salesOnDate[index];
+                      return ListTile(
+                        dense: true,
+                        title: Text('Venta: \$${(sale['total'] as num).toStringAsFixed(2)}'),
+                        subtitle: Text('Método: ${sale['method']} • Artículos: ${sale['itemsCount']}'),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CERRAR'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+    
     for (var item in items) {
       final index = _products.indexWhere((p) => p.id == item.product.id);
       if (index >= 0 && _products[index].stock >= item.quantity) {
