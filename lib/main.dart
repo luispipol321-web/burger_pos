@@ -787,50 +787,70 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       itemBuilder: (context, index) {
         final product = _products[index];
         final hasImage = product.imagePath != null && File(product.imagePath!).existsSync();
+        final bool isAvailable = product.stock > 0;
 
-        return Card(
-          elevation: 2,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            onTap: () => _addToCart(product),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: hasImage
-                      ? Image.file(
-                          File(product.imagePath!),
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          color: Colors.orange.shade50,
-                          child: Icon(Icons.lunch_dining, size: 40, color: Colors.orange[800]),
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        product.name,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '\$${product.price.toStringAsFixed(2)} | Stock: ${product.stock}',
-                        style: TextStyle(
-                          color: product.stock > 5 ? Colors.grey[800] : Colors.red,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
+        return Opacity(
+          opacity: isAvailable ? 1.0 : 0.5,
+          child: Card(
+            elevation: 2,
+            clipBehavior: Clip.antiAlias,
+            color: isAvailable ? Colors.white : Colors.grey[300],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: InkWell(
+              onTap: isAvailable ? () => _addToCart(product) : null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: hasImage
+                        ? Image.file(
+                            File(product.imagePath!),
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            color: Colors.orange.shade50,
+                            child: Icon(Icons.lunch_dining, size: 40, color: Colors.orange[800]),
+                          ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          product.name,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            decoration: isAvailable ? TextDecoration.none : TextDecoration.lineThrough,
+                            color: isAvailable ? Colors.black87 : Colors.red[700],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '\$${product.price.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (!isAvailable)
+                          const Text(
+                            'AGOTADO',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
