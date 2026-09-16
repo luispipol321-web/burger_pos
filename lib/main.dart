@@ -959,22 +959,22 @@ Future<void> _selectReportDate(BuildContext context) async {
           : LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth > 1000) {
-        return Row(
-          children: [
-            Expanded(flex: 4, child: _buildProductGrid(crossAxisCount: 4)),
-            const VerticalDivider(width: 1),
-            Expanded(flex: 2, child: _buildCartPanel()),
-          ],
-        );
-      } else if (constraints.maxWidth > 600) {
-        return Row(
-          children: [
-            Expanded(flex: 3, child: _buildProductGrid(crossAxisCount: 3)),
-            const VerticalDivider(width: 1),
-            Expanded(flex: 2, child: _buildCartPanel()),
-          ],
-        );
-      } else {
+                return Row(
+                  children: [
+                    Expanded(flex: 4, child: _buildProductGrid(crossAxisCount: 4)),
+                    const VerticalDivider(width: 1),
+                    Expanded(flex: 2, child: _buildCartPanel()),
+                  ],
+                );
+              } else if (constraints.maxWidth > 600) {
+                return Row(
+                  children: [
+                    Expanded(flex: 3, child: _buildProductGrid(crossAxisCount: 3)),
+                    const VerticalDivider(width: 1),
+                    Expanded(flex: 2, child: _buildCartPanel()),
+                  ],
+                );
+              } else {
         return Column(
           children: [
             Expanded(child: _buildProductGrid(crossAxisCount: 2)),
@@ -982,8 +982,12 @@ Future<void> _selectReportDate(BuildContext context) async {
             SizedBox(height: 260, child: _buildCartPanel()),
           ],
         );
-      
-  Widget _buildProductGrid({required int crossAxisCount}) {
+      }
+    },
+  ),
+);
+
+Widget _buildProductGrid({required int crossAxisCount}) {
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
