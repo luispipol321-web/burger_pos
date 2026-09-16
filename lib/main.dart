@@ -353,69 +353,6 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
 
   double get _total => _cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
 
-Future<void> _saveRawMaterials() async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('raw_materials_v1', jsonEncode(_rawMaterials));
-    }
-
-    void _addRawMaterial(String name, double cost, int stock, String unit) {
-      setState(() {
-        _rawMaterials.add({'name': name, 'cost': cost, 'stock': stock, 'unit': unit});
-      });
-      _saveRawMaterials();
-    }
-
-    void _updateRawMaterial(Map<String, dynamic> material, String name, double cost, int stock) {
-      setState(() {
-        material['name'] = name;
-        material['cost'] = cost;
-        material['stock'] = stock;
-      });
-      _saveRawMaterials();
-    }
-
-    void _deleteRawMaterial(int index) {
-      setState(() {
-        _rawMaterials.removeAt(index);
-      });
-      _saveRawMaterials();
-    }
-
-    void _restockRawMaterial(Map<String, dynamic> material, int qty, double newCost) {
-      final oldCost = (material['cost'] as num).toDouble();
-      setState(() {
-        material['stock'] = (material['stock'] as int) + qty;
-        material['cost'] = newCost;
-      });
-      _saveRawMaterials();
-
-      if (newCost > oldCost && oldCost > 0) {
-        _showRawPriceIncreaseAlert(material['name'], oldCost, newCost);
-      }
-    }
-
-    void _showRawPriceIncreaseAlert(String materialName, double oldCost, double newCost) {
-      final diff = newCost - oldCost;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('⚠️ ¡ALERTA DE ALZA DE INSUMO!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          content: Text(
-            'El insumo clave "$materialName" subió de precio en tu proveedor.\n\n'
-            '• Costo anterior: \$${oldCost.toStringAsFixed(2)}\n'
-            '• Costo nuevo: \$${newCost.toStringAsFixed(2)} (+ \$${diff.toStringAsFixed(2)})\n\n'
-            'Te recomendamos revisar los precios de venta en tu Menú Comercial.',
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('ENTENDIDO'),
-            ),
-          ],
-        ),
-      );
-    }
 
   void _showPriceIncreaseAlert(Product product, double oldCost, double newCost) {
     final diff = newCost - oldCost;
