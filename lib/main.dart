@@ -405,18 +405,18 @@ Future<void> _selectReportDate(BuildContext context) async {
                 : ListView.builder(
                     itemCount: _loyaltyData.length,
                     itemBuilder: (context, index) {
-                      final clientKey = _loyaltyData.keys.elementAt(index);
-                      final clientInfo = _loyaltyData[clientKey];
-                      return ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: Colors.orange,
-                          child: Icon(Icons.person, color: Colors.white),
-                        ),
-                        title: Text(clientInfo['name'] ?? clientKey, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Última compra: ${clientInfo['lastPurchase'] ?? 'N/A'}\nVisitas / Puntos: ${clientInfo['visits'] ?? 1}'),
-                        isThreeLine: true,
-                      );
-                    },
+                final clientKey = _loyaltyData.keys.elementAt(index);
+                final clientInfo = _loyaltyData[clientKey] as Map<String, dynamic>?;
+                return ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.orange,
+                    child: Icon(Icons.person, color: Colors.white),
+                  ),
+                  title: Text(clientInfo?['name'] ?? clientKey, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('Última compra: ${clientInfo?['lastPurchase'] ?? 'N/A'}\nVisitas / Puntos: ${clientInfo?['visits'] ?? 1}'),
+                  isThreeLine: true,
+                );
+              },
                   ),
           ),
           actions: [
