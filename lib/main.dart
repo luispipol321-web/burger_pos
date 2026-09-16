@@ -302,6 +302,44 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
         'itemsCount': items.fold(0, (sum, i) => sum + i.quantity),
       });
     });
+void _deductRawMaterialsForSale(List<CartItem> items) {
+      for (var cartItem in items) {
+        final productName = cartItem.product.name.toLowerCase();
+        
+        for (var rawMat in _rawMaterials) {
+          final rawName = rawMat['name'].toString().toLowerCase();
+          int currentStock = rawMat['stock'] as int;
+          int qtyToDeduct = cartItem.quantity;
+
+          // Descuentos base según el tipo de producto
+          if (productName.contains('hamburguesa')) {
+            if (rawName.contains('carne') || rawName.contains('pan')) {
+              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            }
+          } else if (productName.contains('papas')) {
+            if (rawName.contains('papa') || rawName.contains('bolsita')) {
+              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            }
+          } else if (productName.contains('boneless')) {
+            if (rawName.contains('boneless') || rawName.contains('pollo')) {
+              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            }
+          } else if (productName.contains('hotdog') || productName.contains('hot dog')) {
+            if (rawName.contains('salchicha') || rawName.contains('pan')) {
+              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            }
+          }
+
+          // Descuento si lleva queso amarillo extra
+          if (cartItem.extras != null && cartItem.extras!.contains('queso extra')) {
+            if (rawName.contains('queso amarillo')) {
+              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            }
+          }
+        }
+      }
+      _saveRawMaterials();
+    }
 Future<void> _selectReportDate(BuildContext context) async {
       final DateTime? picked = await showDatePicker(
         context: context,
@@ -909,15 +947,10 @@ Future<void> _selectReportDate(BuildContext context) async {
             onPressed: _showCorteCajaDialog,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Vaciar Carrito',
-            onPressed: _cart.isEmpty
-                ? null
-                : () {
-                    setState(() {
-                      _cart.clear();
-                    });
-                  },
+                icon: const Icon(Icons.people),
+                tooltip: 'Clientes y Lealtad',
+                onPressed: () => _showClientsLoyaltyView(),
+              ),
           ),
         ],
       ),
