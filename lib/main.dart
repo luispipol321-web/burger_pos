@@ -274,72 +274,56 @@ class _PosHomeScreenState extends State<PosHomeScreen> {
       );
     }
 
-    void _deductRawMaterialsForSale(List<CartItem> soldItems) {
-      for (var cartItem in soldItems) {
-        for (var rawMat in _rawMaterials) {
-          if (cartItem.product.name.toLowerCase().contains('hamburguesa') && 
-             (rawMat['name'].toString().toLowerCase().contains('carne') || rawMat['name'].toString().toLowerCase().contains('pan'))) {
-            int currentStock = (rawMat['stock'] as int);
+    void _deductRawMaterialsForSale(List<CartItem> items) {
+        for (var cartItem in items) {
+          final productName = cartItem.product.name.toLowerCase();
+          
+          for (var rawMat in _rawMaterials) {
+            final rawName = rawMat['name'].toString().toLowerCase();
+            int currentStock = rawMat['stock'] as int;
             int qtyToDeduct = cartItem.quantity;
-            rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
-          }
-        }
-      }
-      _saveRawMaterials();
-    }
-  Future<void> _recordSale(double amount, List<CartItem> items, String method) async {
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-    setState(() { _deductRawMaterialsForSale(items);
-      _totalSalesToday += amount;
-      _totalOrdersToday += 1;
-      _salesHistory.add({
-        'date': dateStr,
-        'total': amount,
-        'method': method,
-        'itemsCount': items.fold(0, (sum, i) => sum + i.quantity),
-      });
-    });
-void _deductRawMaterialsForSale(List<CartItem> items) {
-      for (var cartItem in items) {
-        final productName = cartItem.product.name.toLowerCase();
-        
-        for (var rawMat in _rawMaterials) {
-          final rawName = rawMat['name'].toString().toLowerCase();
-          int currentStock = rawMat['stock'] as int;
-          int qtyToDeduct = cartItem.quantity;
-
-          // Descuentos base según el tipo de producto
-          if (productName.contains('hamburguesa')) {
-            if (rawName.contains('carne') || rawName.contains('pan')) {
-              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
-            }
-          } else if (productName.contains('papas')) {
-            if (rawName.contains('papa') || rawName.contains('bolsita')) {
-              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
-            }
-          } else if (productName.contains('boneless')) {
-            if (rawName.contains('boneless') || rawName.contains('pollo')) {
-              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
-            }
-          } else if (productName.contains('hotdog') || productName.contains('hot dog')) {
-            if (rawName.contains('salchicha') || rawName.contains('pan')) {
-              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
-            }
-          }
-
-          // Descuento si lleva queso amarillo extra
-          if (cartItem.extras != null && cartItem.extras!.contains('queso extra')) {
-            if (rawName.contains('queso amarillo')) {
-              rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+            // Descuentos base según el tipo de producto
+            if (productName.contains('hamburguesa')) {
+              if (rawName.contains('carne') || rawName.contains('pan')) {
+                rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+              }
+            } else if (productName.contains('papas')) {
+              if (rawName.contains('papa') || rawName.contains('bolsita')) {
+                rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+              }
+            } else if (productName.contains('boneless')) {
+              if (rawName.contains('boneless') || rawName.contains('pollo')) {
+                rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+              }
+            } else if (productName.contains('hotdog') || productName.contains('hot dog')) {
+              if (rawName.contains('salchicha') || rawName.contains('pan')) {
+                rawMat['stock'] = (currentStock - qtyToDeduct).clamp(0, 999999);
+              }
             }
           }
         }
+        _saveRawMaterials();
       }
-      _saveRawMaterials();
-    }
+
+      Future<void> _recordSale(double amount, List<CartItem> items, String method) async {
+        final prefs = await SharedPreferences.getInstance();
+        final now = DateTime.now();
+        final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+        setState(() { 
+          _deductRawMaterialsForSale(items);
+          _totalSalesToday += amount;
+          _totalOrdersToday += 1;
+          _salesHistory.add({
+            'date': dateStr,
+            'total': amount,
+            'method': method,
+            'itemsCount': items.fold(0, (sum, i) => sum + i.quantity),
+          });
+        });
+      }
+
 Future<void> _selectReportDate(BuildContext context) async {
       final DateTime? picked = await showDatePicker(
         context: context,
