@@ -924,68 +924,74 @@ Future<void> _selectReportDate(BuildContext context) async {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🍔 Burger POS', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.inventory),
-            tooltip: 'Gestión de Inventario',
-            onPressed: _openInventoryView,
-          ),
-          IconButton(
-            icon: const Icon(Icons.soup_kitchen),
-            tooltip: 'Ver Cocina',
-            onPressed: _showKitchenDialog,
-          ),
-          IconButton(
-            icon: const Icon(Icons.assessment),
-            tooltip: 'Reportes y Corte',
-            onPressed: _showCorteCajaDialog,
-          ),
-          IconButton(
+      Widget build(BuildContext context) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Burger POS'),
+            actions: [
+              IconButton(
                 icon: const Icon(Icons.people),
                 tooltip: 'Clientes y Lealtad',
                 onPressed: () => _showClientsLoyaltyView(),
               ),
+              IconButton(
+                icon: const Icon(Icons.inventory),
+                tooltip: 'Inventario y Productos',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InventoryManagementScreen(
+                        products: _products,
+                        onRestock: _restockProduct,
+                        onAddProduct: _addProduct,
+                        onUpdateProduct: _updateProduct,
+                        onDeleteProduct: _deleteProduct,
+                        rawMaterials: _rawMaterials,
+                        onAddRawMaterial: _addRawMaterial,
+                        onUpdateRawMaterial: _updateRawMaterial,
+                        onDeleteRawMaterial: _deleteRawMaterial,
+                        onRestockRawMaterial: _restockRawMaterial,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth > 1000) {
-                return Row(
-                  children: [
-                    Expanded(flex: 4, child: _buildProductGrid(crossAxisCount: 4)),
-                    const VerticalDivider(width: 1),
-                    Expanded(flex: 2, child: _buildCartPanel()),
-                  ],
-                );
-              } else if (constraints.maxWidth > 600) {
-                return Row(
-                  children: [
-                    Expanded(flex: 3, child: _buildProductGrid(crossAxisCount: 3)),
-                    const VerticalDivider(width: 1),
-                    Expanded(flex: 2, child: _buildCartPanel()),
-                  ],
-                );
-              } else {
-        return Column(
-          children: [
-            Expanded(child: _buildProductGrid(crossAxisCount: 2)),
-            const Divider(height: 1),
-            SizedBox(height: 260, child: _buildCartPanel()),
-          ],
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth > 1000) {
+                      return Row(
+                        children: [
+                          Expanded(flex: 4, child: _buildProductGrid(crossAxisCount: 4)),
+                          const VerticalDivider(width: 1),
+                          Expanded(flex: 2, child: _buildCartPanel()),
+                        ],
+                      );
+                    } else if (constraints.maxWidth > 600) {
+                      return Row(
+                        children: [
+                          Expanded(flex: 3, child: _buildProductGrid(crossAxisCount: 3)),
+                          const VerticalDivider(width: 1),
+                          Expanded(flex: 2, child: _buildCartPanel()),
+                        ],
+                      );
+                    } else {
+                      return Column(
+                        children: [
+                          Expanded(child: _buildProductGrid(crossAxisCount: 2)),
+                          const Divider(height: 1),
+                          SizedBox(height: 260, child: _buildCartPanel()),
+                        ],
+                      );
+                    }
+                  },
+                ),
         );
       }
-    },
-  ),
-);
 
 Widget _buildProductGrid({required int crossAxisCount}) {
     return GridView.builder(
