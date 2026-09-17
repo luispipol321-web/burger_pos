@@ -418,25 +418,41 @@ Future<void> _selectReportDate(BuildContext context) async {
       );
     }
     
-    for (var item in items) {
-      final index = _products.indexWhere((p) => p.id == item.product.id);
-      if (index >= 0 && _products[index].stock >= item.quantity) {
-        _products[index].stock -= item.quantity;
+    Future<void> _recordSale(double amount, List<CartItem> items, String method) async {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+      setState(() { 
+        _deductRawMaterialsForSale(items);
+        _totalSalesToday += amount;
+        _totalOrdersToday += 1;
+        _salesHistory.add({
+          'date': dateStr,
+          'total': amount,
+          'method': method,
+          'itemsCount': items.fold(0, (sum, i) => sum + i.quantity),
+        });
+      });
+
+      for (var item in items) {
+        final index = _products.indexWhere((p) => p.id == item.product.id);
+        if (index >= 0 && _products[index].stock >= item.quantity) {
+          _products[index].stock -= item.quantity;
+        }
       }
-    }
 
-    final orderDetails = items.map((i) => '${i.quantity}x ${i.product.name}').join(', ');
-    _kitchenOrders.add(KitchenOrder(
-      id: DateTime.now().millisecondsSinceEpoch.toString().substring(8),
-      details: orderDetails,
-      timestamp: '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
-    ));
+      final orderDetails = items.map((i) => '${i.quantity}x ${i.product.name}').join(', ');
+      _kitchenOrders.add(KitchenOrder(
+        id: DateTime.now().millisecondsSinceEpoch.toString().substring(8),
+        details: orderDetails,
+        timestamp: '${now.hour}:${now.minute.toString().padLeft(2, '0')}',
+      ));
 
-    await prefs.setDouble('total_sales', _totalSalesToday);
-    await prefs.setInt('total_orders', _totalOrdersToday);
-    _saveProducts();
-    _saveSalesHistory();
-  }
+      await prefs.setDouble('total_sales', _totalSalesToday);
+      await prefs.setInt('total_orders', _totalOrdersToday);
+      _saveProducts();
+      _saveSalesHistory();
 
   void _addProduct(String name, double price, double costPrice, String? imagePath, int stock) {
     final newProduct = Product(
